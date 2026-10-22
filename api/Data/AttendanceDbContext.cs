@@ -8,6 +8,49 @@ public sealed class AttendanceDbContext(DbContextOptions<AttendanceDbContext> op
     public DbSet<EmployeeAccount> Employees => Set<EmployeeAccount>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
+    public void EnsureLegacyLoginOrVersionDefault()
+    {
+        Database.ExecuteSqlRaw("""
+            DECLARE @EmployeesObjectId int = OBJECT_ID(N'dbo.Employees');
+            DECLARE @SystemTypeId int;
+            DECLARE @IsNullable bit;
+            DECLARE @DefaultObjectId int;
+            DECLARE @IsComputed bit;
+
+            SELECT
+                @SystemTypeId = c.system_type_id,
+                @IsNullable = c.is_nullable,
+                @DefaultObjectId = c.default_object_id,
+                @IsComputed = c.is_computed
+            FROM sys.columns c
+            WHERE c.object_id = @EmployeesObjectId
+              AND c.name = N'LoginOrVersion';
+
+            -- Some older/local Employees tables contain this legacy required
+            -- column even though the current API model does not use it. Give
+            -- inserts that omit it a type-compatible default.
+            IF @EmployeesObjectId IS NOT NULL
+               AND @SystemTypeId IS NOT NULL
+               AND @IsNullable = 0
+               AND @DefaultObjectId = 0
+               AND @IsComputed = 0
+            BEGIN
+                DECLARE @DefaultExpression nvarchar(100) =
+                    CASE
+                        WHEN @SystemTypeId = 36 THEN N'NEWID()'
+                        WHEN @SystemTypeId IN (40, 41, 42, 43, 58, 61) THEN N'SYSUTCDATETIME()'
+                        WHEN @SystemTypeId IN (165, 173) THEN N'0x'
+                        ELSE N'0'
+                    END;
+                DECLARE @ConstraintName sysname = N'DF_Employees_LoginOrVersion_Compat';
+                DECLARE @Sql nvarchar(max) =
+                    N'ALTER TABLE dbo.Employees ADD CONSTRAINT ' + QUOTENAME(@ConstraintName) +
+                    N' DEFAULT (' + @DefaultExpression + N') FOR [LoginOrVersion];';
+                EXEC sys.sp_executesql @Sql;
+            END;
+            """);
+    }
+
     public void EnsureEmailOtpColumns()
     {
         Database.ExecuteSqlRaw("""
