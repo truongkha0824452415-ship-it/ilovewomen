@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "ChamCong.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54511;http://localhost:54512"
+    }
+  }
+}

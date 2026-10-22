@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>Chấm công nhân viên · Backend</title>
+  <style>
+    :root { color-scheme: light; --ink:#17243a; --muted:#63718a; --blue:#275df5; --line:#e5eaf2; }
+    * { box-sizing:border-box }
+    body { margin:0; background:#f4f7fb; color:var(--ink); font:15px/1.55 "Segoe UI",Arial,sans-serif }
+    main { width:min(920px,calc(100% - 36px)); margin:56px auto }
+    .top { display:flex; align-items:center; gap:14px; margin-bottom:32px }
+    .logo { width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#e7edff;color:var(--blue);font-size:25px }
+    .eyebrow { margin:0;color:var(--blue);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase }
+    h1 { margin:2px 0 0;font-size:clamp(25px,4vw,34px);letter-spacing:-.04em }
+    .intro { margin:0 0 25px;color:var(--muted);font-size:16px }
+    .actions { display:flex;flex-wrap:wrap;gap:11px;margin-bottom:28px }
+    a.button { display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:10px;text-decoration:none;font-weight:650 }
+    .primary { background:var(--blue);color:white }.secondary { background:white;color:var(--ink);border:1px solid var(--line) }
+    .grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px }
+    article { padding:19px;background:white;border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 18px #21355308 }
+    article h2 { margin:0 0 8px;font-size:17px } article p { margin:0;color:var(--muted) }
+    code { color:#31415d;background:#f0f3f8;padding:2px 5px;border-radius:5px;font-size:13px }
+    .foot { margin-top:23px;color:var(--muted);font-size:13px }
+    @media(max-width:560px){ main{margin:32px auto}.top{margin-bottom:22px} }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div class="logo" aria-hidden="true">✓</div>
+      <div><p class="eyebrow">Backend · ASP.NET Core</p><h1>Chấm công nhân viên</h1></div>
+    </header>
+    <p class="intro">Máy chủ API đang hoạt động. Chọn tài liệu API để thử các chức năng hoặc xem nhanh các nhóm tính năng bên dưới.</p>
+    <nav class="actions" aria-label="Tài liệu API">
+      <a class="button primary" href="/swagger">Mở Swagger <span aria-hidden="true">↗</span></a>
+      <a class="button secondary" href="/api">Danh sách API <span aria-hidden="true">↗</span></a>
+    </nav>
+    <section class="grid" aria-label="Các chức năng backend">
+      <article><h2>Đăng nhập &amp; OTP</h2><p>Đăng ký bằng email, xác minh tài khoản và đăng nhập bằng mã OTP.</p><p style="margin-top:10px"><code>/api/auth</code></p></article>
+      <article><h2>Nhân viên</h2><p>Xem hồ sơ cá nhân; Admin quản lý danh sách và thông tin nhân viên.</p><p style="margin-top:10px"><code>/api/employees</code></p></article>
+      <article><h2>Chấm công</h2><p>Ghi nhận giờ vào, giờ ra và xem lịch sử chấm công.</p><p style="margin-top:10px"><code>/api/attendance</code></p></article>
+      <article><h2>Dữ liệu</h2><p>Backend lưu tài khoản và lịch sử chấm công trong SQL Server LocalDB.</p><p style="margin-top:10px"><code>SQL Server · EF Core</code></p></article>
+    </section>
+    <p class="foot">Swagger chỉ được bật khi chạy ở môi trường Development. Trong Visual Studio, chọn profile <strong>ChamCong.Api</strong> rồi nhấn F5.</p>
+  </main>
+</body>
+</html>
