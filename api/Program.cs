@@ -70,7 +70,7 @@ using (var scope = app.Services.CreateScope())
 {
     var databaseContext = scope.ServiceProvider.GetRequiredService<AttendanceDbContext>();
     databaseContext.Database.EnsureCreated();
-    databaseContext.EnsureLegacyLoginOrVersionDefault();
+    databaseContext.RemoveLegacyLoginOrVersionColumn();
     databaseContext.EnsureEmailOtpColumns();
     databaseContext.EnsureAttendanceLocationColumns();
     var database = scope.ServiceProvider.GetRequiredService<AttendanceDatabase>();

@@ -8,45 +8,46 @@ public sealed class AttendanceDbContext(DbContextOptions<AttendanceDbContext> op
     public DbSet<EmployeeAccount> Employees => Set<EmployeeAccount>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
-    public void EnsureLegacyLoginOrVersionDefault()
+    public void RemoveLegacyLoginOrVersionColumn()
     {
         Database.ExecuteSqlRaw("""
             DECLARE @EmployeesObjectId int = OBJECT_ID(N'dbo.Employees');
-            DECLARE @SystemTypeId int;
-            DECLARE @IsNullable bit;
-            DECLARE @DefaultObjectId int;
-            DECLARE @IsComputed bit;
+            DECLARE @ColumnId int;
 
-            SELECT
-                @SystemTypeId = c.system_type_id,
-                @IsNullable = c.is_nullable,
-                @DefaultObjectId = c.default_object_id,
-                @IsComputed = c.is_computed
+            SELECT @ColumnId = c.column_id
             FROM sys.columns c
             WHERE c.object_id = @EmployeesObjectId
               AND c.name = N'LoginOrVersion';
 
-            -- Some older/local Employees tables contain this legacy required
-            -- column even though the current API model does not use it. Give
-            -- inserts that omit it a type-compatible default.
-            IF @EmployeesObjectId IS NOT NULL
-               AND @SystemTypeId IS NOT NULL
-               AND @IsNullable = 0
-               AND @DefaultObjectId = 0
-               AND @IsComputed = 0
+            IF @EmployeesObjectId IS NOT NULL AND @ColumnId IS NOT NULL
             BEGIN
-                DECLARE @DefaultExpression nvarchar(100) =
-                    CASE
-                        WHEN @SystemTypeId = 36 THEN N'NEWID()'
-                        WHEN @SystemTypeId IN (40, 41, 42, 43, 58, 61) THEN N'SYSUTCDATETIME()'
-                        WHEN @SystemTypeId IN (165, 173) THEN N'0x'
-                        ELSE N'0'
-                    END;
-                DECLARE @ConstraintName sysname = N'DF_Employees_LoginOrVersion_Compat';
-                DECLARE @Sql nvarchar(max) =
-                    N'ALTER TABLE dbo.Employees ADD CONSTRAINT ' + QUOTENAME(@ConstraintName) +
-                    N' DEFAULT (' + @DefaultExpression + N') FOR [LoginOrVersion];';
-                EXEC sys.sp_executesql @Sql;
+                -- Remove any default constraint first so SQL Server permits
+                -- dropping this unused legacy column.
+                DECLARE @DropDefaults nvarchar(max) = N'';
+                SELECT @DropDefaults = @DropDefaults +
+                    N'ALTER TABLE dbo.Employees DROP CONSTRAINT ' + QUOTENAME(dc.name) + N';'
+                FROM sys.default_constraints dc
+                WHERE dc.parent_object_id = @EmployeesObjectId
+                  AND dc.parent_column_id = @ColumnId;
+
+                IF LEN(@DropDefaults) > 0 EXEC sys.sp_executesql @DropDefaults;
+
+                -- Drop ordinary indexes that refer to the obsolete column.
+                DECLARE @DropIndexes nvarchar(max) = N'';
+                SELECT @DropIndexes = @DropIndexes +
+                    N'DROP INDEX ' + QUOTENAME(i.name) + N' ON dbo.Employees;'
+                FROM sys.indexes i
+                INNER JOIN sys.index_columns ic
+                    ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+                WHERE i.object_id = @EmployeesObjectId
+                  AND ic.column_id = @ColumnId
+                  AND i.name IS NOT NULL
+                  AND i.is_primary_key = 0
+                  AND i.is_unique_constraint = 0;
+
+                IF LEN(@DropIndexes) > 0 EXEC sys.sp_executesql @DropIndexes;
+
+                ALTER TABLE dbo.Employees DROP COLUMN [LoginOrVersion];
             END;
             """);
     }
